@@ -11,7 +11,7 @@ This workflow solves that problem by fully automating the CT-e creation process,
 
 ## 💡 Workflow Summary
 
-- The workflow is executed by another workflow and receives an input that can be either:
+- The workflow receives an input that can be either:
   - An **NFe access key (numeric)**, or
   - An **image** containing NFe information.
 - If the input is an image, the workflow uses the **Google Vision OCR API** to extract the NFe access key.
