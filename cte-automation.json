@@ -1,0 +1,538 @@
+{
+  "name": "CT-e",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vision.googleapis.com/v1/images:annotate?key=",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"requests\": [\n    {\n      \"image\": {\n        \"content\": \"{{ $json.info.image }}\" \n      },\n      \"features\": [\n        {\n          \"type\": \"DOCUMENT_TEXT_DETECTION\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        944,
+        -128
+      ],
+      "id": "cc4cd418-082e-42bc-bcde-da83619975ae",
+      "name": "Google Vision"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://152.70.223.170:8081/run",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "xml",
+              "value": "={{ $json.XML }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2736,
+        -320
+      ],
+      "id": "c8c15361-8ef6-4d54-8955-805d8562a5eb",
+      "name": "Run Playwright"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.info.image }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "1667bcc6-a600-403f-ad36-6cfef9758897"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e7f4726b-0bd6-4db2-afd1-37e7e21347f0",
+                    "leftValue": "={{ $json.info.message }}",
+                    "rightValue": "0",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Number Key"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        720,
+        -32
+      ],
+      "id": "c812ff93-d1f1-4f96-b45c-297b093f5e85",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2064,
+        -224
+      ],
+      "id": "899fcbb3-0f87-4b18-a8ed-eac744118063",
+      "name": "Wait",
+      "webhookId": "120009cb-81d3-441a-8ba9-bb56a4a94c38"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2736,
+        -128
+      ],
+      "id": "dffcd69b-5023-419a-add0-32a9b1888ca0",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.responses[0].textAnnotations[0].description;\n\n// Remove espaços e quebras de linha\nconst cleanedText = text.replace(/\\s/g, '');\n\n// Procura por uma sequência de 44 números que comece com '3'\n// O padrão /3\\d{43}/ significa: o número 3 seguido de outros 43 dígitos\nconst match = cleanedText.match(/3\\d{43}/);\n\nreturn {\n  chave_de_acesso: match ? match[0] : \"Não encontrada\",\n  tamanho: match ? match[0].length : 0\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        -128
+      ],
+      "id": "5a370576-d174-444e-81e8-17990495e97d",
+      "name": "Get NFe Key Json"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.meudanfe.com.br/v2/fd/add/{{ $json['chave_de_acesso'] }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1392,
+        -32
+      ],
+      "id": "946b91cb-11d3-4e77-85c3-8effc424d91c",
+      "name": "Verify NFe Key HTTP",
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.meudanfe.com.br/v2/fd/get/xml/{{ $json.value }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Api-Key"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1616,
+        -128
+      ],
+      "id": "727a097a-3d3a-45d0-a102-30041a67c432",
+      "name": "Get NFe Key HTTP"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "1",
+        "messageData": "={{ $json.data }}",
+        "tail": true
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        -224
+      ],
+      "id": "7844dd40-e513-4173-aa93-b3fc05910507",
+      "name": "Temporary List",
+      "credentials": {
+        "redis": {
+          "id": "5nhuqjici22oRFqB",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "XML",
+        "key": "1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2288,
+        -224
+      ],
+      "id": "1f758c6b-a3fc-4ce8-8c25-a9c05208bd18",
+      "name": "Get List",
+      "credentials": {
+        "redis": {
+          "id": "5nhuqjici22oRFqB",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6c6147dc-c1c8-467a-9ff0-15439ad2ce55",
+              "leftValue": "={{ $json.XML.last() }}",
+              "rightValue": "={{ $('Wait').item.json.data }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2512,
+        -224
+      ],
+      "id": "073b4347-82ad-4cda-a7e6-c996ce3349db",
+      "name": "Verify Last Item"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "1"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2960,
+        -320
+      ],
+      "id": "960d538a-7344-42b7-a76c-9fac169224ba",
+      "name": "Delete List",
+      "credentials": {
+        "redis": {
+          "id": "5nhuqjici22oRFqB",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "data",
+        "options": {
+          "fileName": "xml.xml"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1840,
+        -32
+      ],
+      "id": "684414fe-61d6-4306-a237-db7cb524abc7",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        64
+      ],
+      "id": "ce7a1575-7686-4a1a-ade8-aa6db664815b",
+      "name": "No Operation, do nothing1"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        -32
+      ],
+      "id": "fbd51e5a-c77c-46e9-a479-2af1f2fd3136",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Acessa o valor da mensagem vindo do nó anterior\nconst key = $input.first().json.info.message;\n\n// Remove todos os espaços usando Regex\nconst treatedKey = key.replace(/\\s+/g, '');\n\n// Retorna o objeto no formato solicitado\nreturn {\n  chave_de_acesso: treatedKey\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        64
+      ],
+      "id": "448ca998-7892-48bd-acd1-162dd0b95bee",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "content": "## Debounce",
+        "height": 272,
+        "width": 848,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1808,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "5b9c7aa1-0c88-4fb0-adb7-0ccb17d6e7a7",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Vision": {
+      "main": [
+        [
+          {
+            "node": "Get NFe Key Json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Playwright": {
+      "main": [
+        [
+          {
+            "node": "Delete List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Google Vision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get NFe Key Json": {
+      "main": [
+        [
+          {
+            "node": "Verify NFe Key HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify NFe Key HTTP": {
+      "main": [
+        [
+          {
+            "node": "Get NFe Key HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get NFe Key HTTP": {
+      "main": [
+        [
+          {
+            "node": "Temporary List",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Temporary List": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get List": {
+      "main": [
+        [
+          {
+            "node": "Verify Last Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Last Item": {
+      "main": [
+        [
+          {
+            "node": "Run Playwright",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Verify NFe Key HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f4fcf1ea-9c77-4007-9c37-35bffb23084e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0a978865cf11c85e21174a52ad114fb11e6a78eeacd4233c3da4fa0ebea2b4af"
+  },
+  "id": "95ZCWpDpKdCXNjql",
+  "tags": []
+}
